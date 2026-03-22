@@ -1,5 +1,4 @@
-const WARP_BASE = 'https://gw.wearewarp.com/api/v1'
-
+const PROXY = 'https://warp-zapier-proxy.vercel.app'
 function nextBusinessDay() {
   const d = new Date()
   d.setDate(d.getDate() + 1)
@@ -48,69 +47,15 @@ const createBBBooking = {
       { key: 'ref_num',        label: 'Reference Number', required: false, type: 'string' },
     ],
     perform: async (z, bundle) => {
-      const b = bundle.inputData
-      const tier = SERVICE_LEVELS[b.service_level] || SERVICE_LEVELS.threshold
-      const pickupDate = b.pickup_date || nextBusinessDay()
-
-      const item = {
-        name:        b.commodity || 'Freight', packaging: 'PALLET',
-        quantity:    Number(b.quantity), totalWeight: Number(b.weight_lbs), weightUnit: 'lbs',
-        length:      Number(b.length_in), width: Number(b.width_in), height: Number(b.height_in),
-        sizeUnit:    'IN', stackable: false,
-      }
-
-      // Step 1: Get quote with delivery services
-      const quoteRes = await z.request({
-        url: `${WARP_BASE}/freights/quote`,
+      const res = await z.request({
+        url: `${PROXY}/api/bb`,
         method: 'POST',
-        headers: { apikey: bundle.authData.api_key, 'Content-Type': 'application/json' },
-        body: {
-          pickupDate,
-          pickupInfo:   { zipcode: b.pickup_zipcode },
-          deliveryInfo: { zipcode: b.delivery_zipcode },
-          listItems: [item],
-          ...(tier.services.length ? { deliveryServices: tier.services.map(s => ({ service: s, quantity: 1 })) } : {}),
-        },
+        headers: { 'Content-Type': 'application/json', 'x-warp-token': bundle.authData.access_token },
+        body: bundle.inputData,
       })
-      const quote = quoteRes.json
-      const finalPrice = (quote.price?.amount || 0) * tier.markup
-
-      // Step 2: Book
-      const bookRes = await z.request({
-        url: `${WARP_BASE}/freights/booking`,
-        method: 'POST',
-        headers: { apikey: bundle.authData.api_key, 'Content-Type': 'application/json' },
-        body: {
-          quoteId: quote.quote_id,
-          pickupInfo: {
-            locationName: 'Shipper', contactName: 'Shipper', contactPhone: b.origin_phone,
-            address: { street: b.origin_street, city: b.origin_city, state: b.origin_state, zipcode: b.pickup_zipcode },
-            windowTime: { from: `${pickupDate}T08:00:00`, to: `${pickupDate}T16:00:00` },
-          },
-          deliveryInfo: {
-            locationName: 'Consignee', contactName: 'Consignee', contactPhone: b.dest_phone,
-            address: { street: b.dest_street, city: b.dest_city, state: b.dest_state, zipcode: b.delivery_zipcode },
-            windowTime: { from: `${b.delivery_date}T08:00:00`, to: `${b.delivery_date}T20:00:00` },
-          },
-          listItems: [item],
-          ...(tier.services.length ? { deliveryServices: tier.services.map(s => ({ service: s, quantity: 1 })) } : {}),
-          ...(b.ref_num ? { refNum: b.ref_num } : {}),
-        },
-      })
-
-      const booking = bookRes.json
-      return {
-        id:              booking.shipmentNumber ?? booking.trackingNumber ?? booking.shipmentId,
-        tracking_number: booking.shipmentNumber ?? booking.trackingNumber,
-        shipment_id:     booking.shipmentId,
-        quote_id:        quote.quote_id,
-        service_level:   tier.label,
-        amount:          finalPrice.toFixed(2),
-        transit_days:    quote.transit_time,
-        pickup_date:     pickupDate,
-        delivery_date:   b.delivery_date,
-      }
+      return res.json
     },
+    
     sample: { id: 'S-99999-2603', tracking_number: 'S-99999-2603', service_level: 'Room of Choice', amount: '425.00', transit_days: 3 },
   },
 }

@@ -1,5 +1,4 @@
-const WARP_BASE = 'https://gw.wearewarp.com/api/v1'
-
+const PROXY = 'https://warp-zapier-proxy.vercel.app'
 const bookLTLShipment = {
   key: 'book_ltl_shipment',
   noun: 'LTL Shipment',
@@ -37,52 +36,15 @@ const bookLTLShipment = {
       { key: 'ref_num',            label: 'Reference Number',     required: false, type: 'string' },
     ],
     perform: async (z, bundle) => {
-      const b = bundle.inputData
-      const body = {
-        quoteId: b.quote_id,
-        pickupInfo: {
-          locationName: b.origin_company || 'Shipper',
-          contactName:  b.origin_contact || 'Shipper',
-          contactPhone: b.origin_phone,
-          contactEmail: b.origin_email || undefined,
-          address: { street: b.origin_street, city: b.origin_city, state: b.origin_state, zipcode: b.origin_zipcode },
-          windowTime: { from: `${b.pickup_date}T08:00:00`, to: `${b.pickup_date}T16:00:00` },
-        },
-        deliveryInfo: {
-          locationName: b.dest_company || b.dest_contact || 'Consignee',
-          contactName:  b.dest_contact || 'Consignee',
-          contactPhone: b.dest_phone,
-          contactEmail: b.dest_email || undefined,
-          address: { street: b.dest_street, city: b.dest_city, state: b.dest_state, zipcode: b.dest_zipcode },
-          windowTime: { from: `${b.delivery_date}T08:00:00`, to: `${b.delivery_date}T20:00:00` },
-        },
-        listItems: [{
-          name: b.commodity || 'Freight', packaging: 'PALLET',
-          quantity: Number(b.quantity), totalWeight: Number(b.weight_lbs), weightUnit: 'lbs',
-          length: Number(b.length_in), width: Number(b.width_in), height: Number(b.height_in),
-          sizeUnit: 'IN', stackable: false,
-        }],
-        ...(b.ref_num ? { refNum: b.ref_num } : {}),
-      }
-
       const res = await z.request({
-        url: `${WARP_BASE}/freights/booking`,
+        url: `${PROXY}/api/book`,
         method: 'POST',
-        headers: { apikey: bundle.authData.api_key, 'Content-Type': 'application/json' },
-        body,
+        headers: { 'Content-Type': 'application/json', 'x-warp-token': bundle.authData.access_token },
+        body: bundle.inputData,
       })
-
-      const data = res.json
-      return {
-        id:               data.shipmentNumber ?? data.trackingNumber ?? data.shipmentId,
-        tracking_number:  data.shipmentNumber ?? data.trackingNumber,
-        shipment_id:      data.shipmentId,
-        quote_id:         b.quote_id,
-        pickup_date:      b.pickup_date,
-        origin_zip:       b.origin_zipcode,
-        dest_zip:         b.dest_zipcode,
-      }
+      return res.json
     },
+    
     sample: { id: 'S-12345-2603', tracking_number: 'S-12345-2603', shipment_id: 'abc123', quote_id: 'PRICING_abc123' },
   },
 }

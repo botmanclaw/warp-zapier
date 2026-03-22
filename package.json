@@ -1,6 +1,6 @@
 {
   "name": "warp-zapier",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Warp freight integration for Zapier — LTL, FTL, Big & Bulky",
   "main": "index.js",
   "scripts": { "test": "jest" },

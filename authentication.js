@@ -1,20 +1,22 @@
+const PROXY = 'https://warp-zapier-proxy.vercel.app'
+
 const authentication = {
   type: 'custom',
   fields: [
     {
-      key: 'api_key',
-      label: 'Warp API Key',
+      key: 'access_token',
+      label: 'Warp Access Token',
       required: true,
       type: 'string',
-      helpText: 'Your Warp API key. Request one from api-support@wearewarp.com.',
+      helpText: 'Your Warp integration token. Get one at https://warp-zapier-proxy.vercel.app/connect',
     },
   ],
   test: {
-    url: 'https://gw.wearewarp.com/api/v1/freights/quote-history',
+    url: `${PROXY}/api/auth/test-token`,
     method: 'GET',
-    headers: { apikey: '{{bundle.authData.api_key}}' },
+    headers: { 'x-warp-token': '{{bundle.authData.access_token}}' },
   },
-  connectionLabel: (z, bundle) => `Warp API (${bundle.authData.api_key.slice(0, 8)}…)`,
+  connectionLabel: (z, bundle) => `Warp (${bundle.authData.access_token.slice(0, 12)}…)`,
 }
 
 module.exports = authentication

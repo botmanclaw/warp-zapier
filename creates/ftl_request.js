@@ -1,5 +1,4 @@
-const WARP_BASE = 'https://gw.wearewarp.com/api/v1'
-
+const PROXY = 'https://warp-zapier-proxy.vercel.app'
 function nextBusinessDay() {
   const d = new Date()
   d.setDate(d.getDate() + 1)
@@ -27,49 +26,15 @@ const createFTLRequest = {
       { key: 'commodity',        label: 'Commodity Name',     required: false, type: 'string', default: 'Freight' },
     ],
     perform: async (z, bundle) => {
-      const b = bundle.inputData
-      const pickupDate = b.pickup_date || nextBusinessDay()
-      const weight = Math.max(Number(b.weight_lbs), Number(b.num_pallets) * 500, 10000)
-
       const res = await z.request({
-        url: `${WARP_BASE}/freights/quote`,
+        url: `${PROXY}/api/ftl`,
         method: 'POST',
-        headers: { apikey: bundle.authData.api_key, 'Content-Type': 'application/json' },
-        body: {
-          pickupDate,
-          pickupInfo:   { zipcode: b.pickup_zipcode },
-          deliveryInfo: { zipcode: b.delivery_zipcode },
-          shipmentType: 'FTL',
-          listItems: [{
-            name:        b.commodity || 'Freight',
-            packaging:   'PALLET',
-            quantity:    Number(b.num_pallets),
-            totalWeight: weight,
-            weightUnit:  'lbs',
-            length:      Number(b.length_in) || 48,
-            width:       Number(b.width_in)  || 40,
-            height:      Number(b.height_in) || 48,
-            sizeUnit:    'IN',
-            stackable:   false,
-          }],
-        },
+        headers: { 'Content-Type': 'application/json', 'x-warp-token': bundle.authData.access_token },
+        body: bundle.inputData,
       })
-
-      const data = res.json
-      return {
-        id:           data.quote_id,
-        quote_id:     data.quote_id,
-        amount:       data.price?.amount,
-        currency:     data.price?.currency_code || 'USD',
-        transit_days: data.transit_time,
-        expires_at:   data.expiration_time_utc,
-        pickup_date:  pickupDate,
-        pickup_zip:   b.pickup_zipcode,
-        delivery_zip: b.delivery_zipcode,
-        num_pallets:  b.num_pallets,
-        weight_lbs:   weight,
-      }
+      return res.json
     },
+    
     sample: { id: 'PRICING_ftl123', quote_id: 'PRICING_ftl123', amount: 1850.00, currency: 'USD', transit_days: 2, num_pallets: 24 },
   },
 }
