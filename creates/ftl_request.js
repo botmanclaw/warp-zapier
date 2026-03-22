@@ -13,7 +13,6 @@ const createFTLRequest = {
   display: {
     label: 'Create FTL Request',
     description: 'Request a Warp full truckload (FTL) freight quote.',
-    important: true,
   },
   operation: {
     inputFields: [

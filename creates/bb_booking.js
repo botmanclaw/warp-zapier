@@ -19,7 +19,6 @@ const createBBBooking = {
   display: {
     label: 'Create Big & Bulky Booking',
     description: 'Quote and book a Warp Big & Bulky delivery with the chosen service level.',
-    important: true,
   },
   operation: {
     inputFields: [

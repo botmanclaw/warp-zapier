@@ -13,7 +13,6 @@ const createLTLQuote = {
   display: {
     label: 'Create LTL Quote',
     description: 'Get a Warp LTL freight quote for a shipment.',
-    important: true,
   },
   operation: {
     inputFields: [

@@ -6,7 +6,6 @@ const bookLTLShipment = {
   display: {
     label: 'Book LTL Shipment',
     description: 'Book a Warp LTL shipment using an existing quote ID.',
-    important: true,
   },
   operation: {
     inputFields: [
